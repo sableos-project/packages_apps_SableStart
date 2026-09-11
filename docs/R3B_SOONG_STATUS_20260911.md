@@ -37,6 +37,15 @@ SABLE_METRO_R3B_SOONG_MODULE_BUILD=FAIL
 SABLE_METRO_R3B_FAILURE_CLASS=COROUTINES_CLASSPATH
 ```
 
+The gate-reported failure class is now known to be a classifier false positive. Follow-up evidence showed that `kotlinx_coroutines_android` built successfully in the same graph and the SableStart compiler reached two concrete Kotlin errors in `SableMetroPreviewActivity.kt`:
+
+```text
+line 151: 'onRequestPermissionsResult' overrides nothing
+line 156: argument type mismatch: Array<out String> vs Array<String>
+```
+
+The relevant AndroidX `ComponentActivity` callback signature is `permissions: Array<String>`. No `Android.bp` coroutine dependency change is justified by this evidence.
+
 Evidence directory on the validated build host:
 
 ```text
@@ -49,4 +58,4 @@ Evidence seal reported by the gate:
 92041ee86793549ceef22863307d85451a288bef470decc75e73582ecc231c53  SHA256SUMS.txt
 ```
 
-Interpretation: the revised R3 source is bound and reached Soong/Kotlin compilation, but Android build closure and APK packaging are not proven. The next action is bounded classpath/module forensics in the exact workspace. Do not guess a coroutine module name or fetch a dependency from the network.
+Interpretation: revised R3 source is bound and reached actual Soong/Kotlin compilation. Android build closure and APK packaging remain unproven. The next correction should be the minimal Kotlin callback-signature fix, followed by a rerun of the module-scoped gate. The gate failure classifier should also be narrowed so normal coroutine build-log lines do not override the concrete compiler diagnostic.
