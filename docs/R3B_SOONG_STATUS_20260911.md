@@ -144,13 +144,52 @@ application-label:'Sable Start'
 
 The APK declares the expected live-data permissions, including `READ_CALENDAR`, `READ_MEDIA_IMAGES`, `READ_MEDIA_AUDIO`, and legacy `READ_EXTERNAL_STORAGE` with max SDK 32.
 
+## Gate implementation forensics
+
+The post-build checks in the R3B-R1 gate were confirmed to use early-exit `grep -q` pipelines under global `set -o pipefail` semantics:
+
+```bash
+if unzip -l "$APK" | grep -q 'AndroidManifest.xml'; then
+    pass SABLE_METRO_R3B_APK_HAS_MANIFEST
+else
+    fail SABLE_METRO_R3B_APK_HAS_MANIFEST
+fi
+
+if unzip -l "$APK" | grep -qE 'classes([0-9]+)?\.dex'; then
+    pass SABLE_METRO_R3B_APK_HAS_DEX
+else
+    fail SABLE_METRO_R3B_APK_HAS_DEX
+fi
+```
+
+A read-only reproduction demonstrated:
+
+```text
+manifest_pipeline_rc=141
+manifest_control_rc=0
+dex_control_rc=0
+```
+
+Return code 141 is SIGPIPE (128 + 13). This proves that the manifest check can report failure even when the manifest is present: `grep -q` exits after finding its match, the upstream `unzip` receives SIGPIPE, and `pipefail` promotes that upstream failure to the pipeline status.
+
+The DEX member is independently proven present by Python `zipfile`, and a non-early-exit control also succeeds. The exact DEX false-negative mechanism is not yet isolated because the first reproduction used `unzip -Z1` rather than the gate's exact `unzip -l` command. The packaging claim does not depend on resolving that shell-level detail.
+
+The build-log failure classifier also contains an over-broad coroutine branch:
+
+```bash
+if grep -qiE 'unresolved reference.*(kotlinx|Dispatchers|withContext|delay)|kotlinx\.coroutines' "$BUILD_LOG"; then
+    record SABLE_METRO_R3B_FAILURE_CLASS COROUTINES_CLASSPATH
+```
+
+Because any normal `kotlinx.coroutines` build activity satisfies the second alternative, concrete Kotlin type errors can be misclassified. A corrected gate should classify concrete compiler diagnostics before generic dependency-name matches and should use a direct archive API such as Python `zipfile` for APK member checks.
+
 ### Corrected claim boundary
 
 The R3B-R1 source has passed the actual Soong module build, and the exact emitted APK has independently passed archive-structure verification for both `AndroidManifest.xml` and `classes.dex`. The package also parses successfully with `aapt2` and has an APK Signing Block.
 
 Therefore, the gate's `APK_HAS_MANIFEST=FAIL` and `APK_HAS_DEX=FAIL` results are false negatives in the post-build inspection logic, not properties of the APK. The aggregate gate remains mechanically reported as `FAIL`, but the underlying compile and APK-structure evidence is positive.
 
-No additional source mutation or rebuild is justified by these two false-negative checks. The gate implementation should be corrected separately, preserving the original evidence. A likely class of bug is archive-member probing through an early-exit pipeline under `set -o pipefail`; the exact script implementation still needs inspection before assigning the precise cause.
+No additional source mutation or rebuild is justified by these two false-negative checks. The gate implementation should be corrected separately, preserving the original evidence.
 
 No clean/clobber, network fetch, device contact, or package install occurred in these compile and forensic stages.
 
