@@ -43,12 +43,23 @@ R6 requires:
 
 R6 does **not** include a general theme editor, launcher folders/categories, cloud search, recommendation ranking, or custom Phone/Messaging work.
 
+## HOME/default launcher is a separate gate
+
+R6 feature correctness does not itself authorize or prove changing the device's default HOME launcher.
+
+Read:
+
+- [`docs/HOME_ADOPTION_GATE.md`](docs/HOME_ADOPTION_GATE.md)
+
+That document keeps Sable Start HOME adoption, navigation/lifecycle validation, reboot persistence, and fallback/recovery separate from ordinary R6 feature testing. Until the product explicitly authorizes and validates HOME adoption, tests must not silently replace Quickstep/default HOME merely because Sable Start is launcher-capable.
+
 ## Architecture
 
 See:
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - [`docs/R6_ALL_APPS_AND_GREETING.md`](docs/R6_ALL_APPS_AND_GREETING.md)
+- [`docs/HOME_ADOPTION_GATE.md`](docs/HOME_ADOPTION_GATE.md)
 - [`docs/MIGRATION_STATUS.md`](docs/MIGRATION_STATUS.md)
 
 Organization-wide product direction is maintained by `sableos-project/.github/docs/DEVELOPMENT_RELEASE_PLAN.md` until the central `sableos` project repository transition is complete.
