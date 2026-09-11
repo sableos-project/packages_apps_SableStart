@@ -44,18 +44,53 @@ line 151: 'onRequestPermissionsResult' overrides nothing
 line 156: argument type mismatch: Array<out String> vs Array<String>
 ```
 
-The relevant AndroidX `ComponentActivity` callback signature is `permissions: Array<String>`. No `Android.bp` coroutine dependency change is justified by this evidence.
+No `Android.bp` coroutine dependency change is justified by this evidence.
 
-Evidence directory on the validated build host:
+## R3B-R1 minimal source correction
+
+The exact pre-fix file identity was confirmed before mutation:
+
+```text
+12db1f5a6fc6584dd462395d5f30f44d8980c4edd92b901bb52f9cb921eca1a2  SableMetroPreviewActivity.kt
+```
+
+The single matching callback parameter was changed from:
+
+```kotlin
+permissions: Array<out String>,
+```
+
+to:
+
+```kotlin
+permissions: Array<String>,
+```
+
+The post-fix source identity is:
+
+```text
+dde4196f82ea4357cfdef5a78fe0d9824971d93e52ee6886923c6be245f1f249  SableMetroPreviewActivity.kt
+```
+
+Observed mutation gate facts:
+
+```text
+old_signature_match_count=1
+SABLE_METRO_R3B_R1_SOURCE_MUTATION=PASS
+```
+
+No other source or build-system change is implied by this correction.
+
+Evidence directory for the original failed build on the validated build host:
 
 ```text
 /tmp/SABLE_METRO_R3B_SOONG_20260911_092512
 ```
 
-Evidence seal reported by the gate:
+Evidence seal reported by the original gate:
 
 ```text
 92041ee86793549ceef22863307d85451a288bef470decc75e73582ecc231c53  SHA256SUMS.txt
 ```
 
-Interpretation: revised R3 source is bound and reached actual Soong/Kotlin compilation. Android build closure and APK packaging remain unproven. The next correction should be the minimal Kotlin callback-signature fix, followed by a rerun of the module-scoped gate. The gate failure classifier should also be narrowed so normal coroutine build-log lines do not override the concrete compiler diagnostic.
+Interpretation: revised R3 source reached actual Soong/Kotlin compilation. Android build closure and APK packaging remain unproven until the module gate is rerun against the new exact source hash. The gate failure classifier should also be narrowed so normal coroutine build-log lines do not override concrete compiler diagnostics.
