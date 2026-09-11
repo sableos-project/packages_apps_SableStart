@@ -1,8 +1,8 @@
 # Sable Start migration status
 
-Status: **IN PROGRESS — source capture, exact local commit seal, remote branch push, and PR diff boundary are closed; direct build/reconstruction from the migrated checkout remains open.**
+Status: **IN PROGRESS — source capture, sealed migration commit, remote branch/PR boundary, and direct migrated-checkout module build are closed; clean `platform_manifest` reconstruction and source integration remain open.**
 
-The authoritative validated Panther workspace remains an important reference until the migrated repository checkout has been rebuilt and the complete source composition is reproducible through `platform_manifest`. New feature development should move to the organization repository only after the migrated-source build gate closes.
+The organization repository checkout is now proven to build `SableStart` directly at the canonical Android source path and to reproduce the previously validated APK hash on the same Panther substrate/toolchain. The historical Panther workspace remains an important reference until the complete source composition is reconstructible from `platform_manifest` and the source integration boundary is closed.
 
 ## Validated source baseline
 
@@ -22,6 +22,12 @@ Validated preview activity SHA-256:
 
 ```text
 dde4196f82ea4357cfdef5a78fe0d9824971d93e52ee6886923c6be245f1f249  src/com/sable/start/ui/SableMetroPreviewActivity.kt
+```
+
+Previously validated R3B APK SHA-256:
+
+```text
+1b35cd8a6ee90bfac6108babce160a040c5315dec88e7b0c6ae9c9b968b757ef
 ```
 
 ## R4 recursive capture — PASS
@@ -106,7 +112,7 @@ Remote `main` at the push gate was:
 60bd4c5d6c698784af9470ab5d84bcf4610c70f4
 ```
 
-The later `main` commit relative to the migration parent changed documentation only. GitHub's independent comparison of the migration branch against current `main` showed exactly the intended 12 source additions, 1802 additions, and zero deletions.
+GitHub comparison established the source-only migration boundary: one source commit, exactly 12 added source files, 1802 additions, and zero deletions.
 
 R4-R2 evidence seal:
 
@@ -114,9 +120,9 @@ R4-R2 evidence seal:
 a133f8950a41a4dc2ecbc62a73085f1b1a4ec59d5b8d7e5f6b97f255ad16d7d6
 ```
 
-Note: the local R4-R2 shell output emitted `comm` sorted-order warnings during one path-disjointness check, so that specific local line is not treated as sufficient evidence. The GitHub comparison/PR file set independently established the source-only diff boundary.
+Note: one local R4-R2 path-disjointness shell check emitted `comm` sorted-order warnings. That line is not treated as sufficient evidence; the GitHub comparison independently established the source-only diff boundary.
 
-## Pull request — OPEN
+## Pull request — OPEN / UNMERGED
 
 PR #1:
 
@@ -127,47 +133,132 @@ head: m1/sablestart-portability-close-20260911
 head SHA: 059d5d23e4186bbd3119180433a5e6206b7d95bd
 ```
 
-Observed PR boundary when created:
+The source migration commit has intentionally not been rewritten merely to absorb later documentation/CI changes on `main`.
+
+PR integration remains a separate authorization/acceptance step. An open PR or a successful migrated-checkout build is not itself evidence that the source has been merged.
+
+## R5 sandbox preflights — HOST LIMITATION, NO BUILD
+
+Two bubblewrap-based approaches stopped before compilation because the ThinkPad host policy does not permit the required unprivileged namespace setup.
+
+Observed stops:
 
 ```text
-commits:       1
-changed files: 12
-additions:     1802
-deletions:     0
-mergeable:     true
+bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted
+SABLESTART_R5_BWRAP_USERNS_PREFLIGHT=FAIL
 ```
 
-The source migration commit has intentionally not been rewritten merely to incorporate documentation-only `main` changes.
+and:
 
-## R5 migrated-checkout build — IN PROGRESS
+```text
+bwrap: setting up uid map: Permission denied
+SABLESTART_R5_R1_BWRAP_MOUNT_PREFLIGHT=FAIL
+```
 
-The next migration proof is a build where the exact migrated Git checkout supplies `packages/apps/SableStart`.
+These are sandbox-environment limitations, not source compile failures. No build was attempted in either case, and the host security policy was not weakened to force bubblewrap to work.
 
-Two attempted bubblewrap-based sandbox approaches stopped before the build because the ThinkPad host policy does not permit the required unprivileged user/mount/network namespace setup. These stops did not constitute source/build failures and did not mutate source.
+## R5-R2 direct migrated-checkout module build — PASS
 
-The current R5 strategy is a separately authorized bounded direct-checkout build method that must prove:
+The exact migrated Git checkout was temporarily presented at the canonical Android source path using an explicitly authorized same-filesystem atomic path swap. Source contents were not edited. The original workspace source directory was held separately and restored after the build; the migrated checkout path was also restored.
 
-- build input is exact commit `059d5d23e4186bbd3119180433a5e6206b7d95bd` / tree `c00fd741c401fdd1421e8971bfb82f01c4b7c7da`;
-- no source-content mutation;
-- network boundary according to the approved gate;
-- successful Soong `SableStart` module build;
-- package/artifact structure and hash;
-- restoration/integrity of any temporary host path manipulation used solely to present the checkout at the canonical Android path;
-- migrated Git checkout remains clean;
-- authoritative workspace source remains byte-identical.
+Build identity:
 
-Do not mark R5 `PASS` until the actual gate output is captured and reviewed.
+```text
+MIGRATED_COMMIT=059d5d23e4186bbd3119180433a5e6206b7d95bd
+MIGRATED_TREE=c00fd741c401fdd1421e8971bfb82f01c4b7c7da
+source_count=12
+```
 
-## Remaining migration closure
+The gate proved before build:
 
-Before this repository is treated as fully canonical source for continuing product development, the project still needs to close, at minimum:
+```text
+SABLESTART_R5_R2_COMMIT_BINDING=PASS
+SABLESTART_R5_R2_TREE_BINDING=PASS
+SABLESTART_R5_R2_PARENT_BINDING=PASS
+SABLESTART_R5_R2_MIGRATED_REPO_CLEAN=PASS
+SABLESTART_R5_R2_SOURCE_COUNT_BINDING=PASS
+SABLESTART_R5_R2_PRE_SWAP_BYTE_BINDING=PASS
+SABLESTART_R5_R2_SAME_FILESYSTEM_RENAME_PRECONDITION=PASS
+SABLESTART_R5_R2_DIRECT_CHECKOUT_HEAD_AT_BUILD_PATH=PASS
+SABLESTART_R5_R2_DIRECT_CHECKOUT_TREE_AT_BUILD_PATH=PASS
+SABLESTART_R5_R2_DIRECT_CHECKOUT_INODE_IDENTITY=PASS
+SABLESTART_R5_R2_HELD_BASELINE_INODE_IDENTITY=PASS
+```
 
-1. **migrated-checkout module build** — build `SableStart` with the exact organization-repository checkout supplying the canonical Android source path;
-2. **artifact/package validation** — bind the produced APK to the migrated source/build identity;
-3. **runtime equivalence/smoke as required** — prove no migration-induced functional regression relative to the already validated R3C behavior;
-4. **revision-pinned source composition** — make `platform_manifest` reconstruct the expected source checkout without local/manual source substitution;
-5. **fresh reconstruction/build gate** — prove the organization repositories, not a historical local workspace arrangement, are sufficient to reproduce the build claim;
-6. **PR integration** — merge/source-integrate only when the chosen migration acceptance boundary is satisfied.
+### Network boundary
+
+The build did not use a network namespace because the host blocks the required unprivileged namespace setup. Instead, the approved R5-R2 gate used a seccomp execution wrapper that denied creation of non-`AF_UNIX` sockets.
+
+Preflight proved:
+
+```text
+AF_INET_SOCKET_DENIED=PASS
+AF_UNIX_SOCKET_ALLOWED=PASS
+SECCOMP_NETWORK_DENIAL_PROBE=PASS
+SABLESTART_R5_R2_SECCOMP_NETWORK_DENIAL=PASS
+```
+
+The exact claim is therefore **seccomp non-AF_UNIX socket-creation denial during the build**, not network-namespace isolation.
+
+### Fresh isolated output
+
+The build used a fresh isolated output directory without clean/clobber/delete:
+
+```text
+/srv/data/sableos_panther_graphene_2026081300_workspace/out_r5_migrated_20260911_142602
+```
+
+Observed artifact closure:
+
+```text
+SABLESTART_R5_R2_APK_STRUCTURE=PASS
+SABLESTART_R5_R2_AAPT2_PARSE=PASS
+package: name='org.sableos.start' versionCode='38' versionName='17'
+targetSdkVersion:'37'
+application-label:'Sable Start'
+SABLESTART_R5_R2_DIRECT_MIGRATED_CHECKOUT_BUILD=PASS
+```
+
+Produced APK SHA-256:
+
+```text
+1b35cd8a6ee90bfac6108babce160a040c5315dec88e7b0c6ae9c9b968b757ef
+```
+
+This exactly matches the previously validated R3B SableStart APK hash on the same Panther build substrate/toolchain. This is strong artifact-equivalence evidence for the migration, but it is not yet a claim of cross-host or general bit-for-bit reproducibility.
+
+Evidence directory:
+
+```text
+/tmp/SABLESTART_R5_R2_DIRECT_BUILD_20260911_142602
+```
+
+Evidence checksum-file seal:
+
+```text
+f9cca514cdb02b002710084e2ea8077c2fd19089bd62bdb3a9ecceee1e8a0b26  SHA256SUMS.txt
+```
+
+Restoration/side-effect closure:
+
+```text
+WORKSPACE_SOURCE_PATH_RESTORED=YES
+MIGRATED_REPO_PATH_RESTORED=YES
+DELETE_OR_CLEAN_PERFORMED=NO
+```
+
+The isolated output directory remains present; no cleanup authorization is implied by this gate.
+
+## Remaining R5 migration closure
+
+The direct migrated-checkout build portion is closed. Full R5 migration/reconstruction closure still requires, at minimum:
+
+1. **revision-pinned source composition** — `platform_manifest` must describe the organization repository checkout at the intended canonical Android path without a manual source swap;
+2. **fresh reconstruction/build gate** — reconstruct from the manifest into a controlled fresh workspace and prove the organization repositories plus pinned upstream inputs are sufficient for the build claim;
+3. **runtime equivalence/smoke if required by the acceptance boundary** — bind any runtime check to the migrated/reconstructed artifact rather than relying only on the historical R3C install;
+4. **PR integration** — merge/source-integrate only when the chosen acceptance boundary is satisfied and merge authorization is explicit.
+
+The direct-build PASS removes the earlier uncertainty about whether the captured organization checkout itself can compile. The remaining uncertainty is source-composition reconstruction/integration, not SableStart module buildability.
 
 ## Next feature milestone after migration closure
 
@@ -183,6 +274,6 @@ R6 should not be developed as a Panther-only workspace fork.
 
 ## Claim boundary
 
-Current evidence proves that the validated R3 Sable Start source was captured into the organization repository with exact byte fidelity, committed under a sealed Git identity, pushed without rewriting that source commit, and exposed through a source-only pull request boundary.
+Current evidence proves that the validated R3 Sable Start source was captured into the organization repository with exact byte fidelity, committed under a sealed Git identity, pushed without rewriting that source commit, and **successfully built directly from the exact migrated Git checkout at the canonical Android source path**. The fresh isolated build produced a structurally valid APK whose SHA-256 exactly matches the previously validated R3B artifact on the same Panther substrate/toolchain, and both workspace/migrated source paths were restored without clean/delete.
 
-It does **not yet prove** a successful build from the migrated checkout, a fresh `platform_manifest` reconstruction, or that PR #1 has been merged. Those remain separate gates.
+It does **not yet prove** a fresh `platform_manifest` reconstruction, cross-host reproducibility, runtime behavior of a separately reconstructed artifact, or that PR #1 has been merged. Those remain separate gates.
