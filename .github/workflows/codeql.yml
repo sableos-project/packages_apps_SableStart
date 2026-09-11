@@ -1,0 +1,64 @@
+name: CodeQL Security Scan
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "30 4 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: Detect Java/Kotlin source
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      has_code: ${{ steps.detect.outputs.has_code }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Detect source
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+          if find . -type f \( -name '*.kt' -o -name '*.java' \) -not -path './.git/*' -print -quit | grep -q .; then
+            echo 'has_code=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'has_code=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  analyze:
+    name: Analyze Java/Kotlin
+    needs: detect
+    if: needs.detect.outputs.has_code == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        with:
+          languages: java-kotlin
+          build-mode: none
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
