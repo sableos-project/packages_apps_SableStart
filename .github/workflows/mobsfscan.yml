@@ -1,0 +1,44 @@
+name: MobSF Source Scan
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Detect Android source
+        id: source
+        shell: bash
+        run: |
+          if find . -type f \( -name '*.kt' -o -name '*.java' -o -name 'AndroidManifest.xml' \) -not -path './.git/*' -print -quit | grep -q .; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run MobSFScan
+        if: steps.source.outputs.present == 'true'
+        uses: MobSF/mobsfscan@ec2927a8cfab6626a67f26b223be3aba52a34b70 # pinned baseline
+        with:
+          args: ". --sarif --output mobsfscan-results.sarif --type android"
+      - name: Upload SARIF
+        if: always() && hashFiles('mobsfscan-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        with:
+          sarif_file: mobsfscan-results.sarif
+          category: sable-mobsfscan-android
