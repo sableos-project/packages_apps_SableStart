@@ -105,13 +105,54 @@ Evidence seal:
 ce9b4fd306bc03990f3e99376d8fb390f59cbf11bbb919d82f5704b28e75eedd  SHA256SUMS.txt
 ```
 
-### Current claim boundary
+## Independent APK forensics
 
-The R3B-R1 source has now passed the actual Soong module build. This establishes Kotlin/Android compile closure for the module build invocation and proves that an APK path was emitted. The overall gate remains failed because the gate's post-build APK-content checks reported no manifest and no DEX entry.
+A read-only follow-up inspected the exact APK emitted at the gate path. The artifact identity was:
 
-Those two APK-content failures must be investigated before treating packaging as closed. They should not be interpreted as a source compile failure. In particular, the installed system APK may differ from an intermediate unstripped APK because Android dexpreopt can change the installed artifact, while `AndroidManifest.xml` should still be independently verified with archive listing and `aapt2` inspection.
+```text
+path=/srv/data/sableos_panther_graphene_2026081300_workspace/out/target/product/panther/system/app/SableStart/SableStart.apk
+size=4890816
+sha256=1b35cd8a6ee90bfac6108babce160a040c5315dec88e7b0c6ae9c9b968b757ef
+file=Android package (APK), with APK Signing Block
+```
 
-No source mutation, clean/clobber, network fetch, device contact, or package install is justified by the current evidence. The next action is read-only APK/post-build forensics and review of the gate's archive-member detection logic.
+Python `zipfile` inspection independently established:
+
+```text
+is_zipfile=True
+member_count=173
+manifest_exact_count=1
+dex_member_count=1
+dex_members=['classes.dex']
+```
+
+The archive member list explicitly contained both:
+
+```text
+classes.dex
+AndroidManifest.xml
+```
+
+`aapt2 dump badging` also successfully parsed the package and reported:
+
+```text
+package: name='org.sableos.start' versionCode='38' versionName='17' platformBuildVersionName='17' platformBuildVersionCode='37' compileSdkVersion='37' compileSdkVersionCodename='17'
+minSdkVersion:'37'
+targetSdkVersion:'37'
+application-label:'Sable Start'
+```
+
+The APK declares the expected live-data permissions, including `READ_CALENDAR`, `READ_MEDIA_IMAGES`, `READ_MEDIA_AUDIO`, and legacy `READ_EXTERNAL_STORAGE` with max SDK 32.
+
+### Corrected claim boundary
+
+The R3B-R1 source has passed the actual Soong module build, and the exact emitted APK has independently passed archive-structure verification for both `AndroidManifest.xml` and `classes.dex`. The package also parses successfully with `aapt2` and has an APK Signing Block.
+
+Therefore, the gate's `APK_HAS_MANIFEST=FAIL` and `APK_HAS_DEX=FAIL` results are false negatives in the post-build inspection logic, not properties of the APK. The aggregate gate remains mechanically reported as `FAIL`, but the underlying compile and APK-structure evidence is positive.
+
+No additional source mutation or rebuild is justified by these two false-negative checks. The gate implementation should be corrected separately, preserving the original evidence. A likely class of bug is archive-member probing through an early-exit pipeline under `set -o pipefail`; the exact script implementation still needs inspection before assigning the precise cause.
+
+No clean/clobber, network fetch, device contact, or package install occurred in these compile and forensic stages.
 
 The original failed-build evidence remains:
 
