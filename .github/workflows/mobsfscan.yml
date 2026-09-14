@@ -33,7 +33,7 @@ jobs:
           fi
       - name: Run MobSFScan
         if: steps.source.outputs.present == 'true'
-        uses: MobSF/mobsfscan@ec2927a8cfab6626a67f26b223be3aba52a34b70 # pinned baseline
+        uses: MobSF/mobsfscan@2659f2ac6d185f0c60ce2eb754f5f48b683f73fb # pinned baseline
         with:
           args: ". --sarif --output mobsfscan-results.sarif --type android"
       - name: Upload SARIF
