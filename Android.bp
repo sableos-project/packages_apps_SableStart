@@ -1,6 +1,5 @@
 android_app {
     name: "SableStart",
-    v4_signature: true,
 
     manifest: "AndroidManifest.xml",
 
