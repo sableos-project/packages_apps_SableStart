@@ -45,7 +45,7 @@ class SableStartActivity : ComponentActivity() {
             }
 
             override fun onPackagesAvailable(
-                packageNames: Array<String>,
+                vararg packageNames: String,
                 user: UserHandle,
                 replacing: Boolean,
             ) {
@@ -56,6 +56,20 @@ class SableStartActivity : ComponentActivity() {
                 packageNames: Array<String>,
                 user: UserHandle,
                 replacing: Boolean,
+            ) {
+                scheduleInventoryRefresh()
+            }
+
+            override fun onPackagesSuspended(
+                vararg packageNames: String,
+                user: UserHandle,
+            ) {
+                scheduleInventoryRefresh()
+            }
+
+            override fun onPackagesUnsuspended(
+                vararg packageNames: String,
+                user: UserHandle,
             ) {
                 scheduleInventoryRefresh()
             }
