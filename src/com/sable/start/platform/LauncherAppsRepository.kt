@@ -46,7 +46,7 @@ class LauncherAppsRepository(
                         it.component.className
                     }
                     .thenBy {
-                        it.user.identifier
+                        userManager.getSerialNumberForUser(it.user)
                     },
             )
     }
