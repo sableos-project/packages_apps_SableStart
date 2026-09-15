@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.sableos.start" android:versionCode="38">
+    package="org.sableos.start" android:versionCode="39">
 
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -34,11 +34,10 @@
 
         </activity>
 
-    
-        <!-- M1-R4A visual-only Sable Metro design-system preview. -->
+        <!-- Historical Metro reference retained for local development only. -->
         <activity
             android:name=".ui.SableMetroPreviewActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="Sable Metro Preview" />
     </application>
 
