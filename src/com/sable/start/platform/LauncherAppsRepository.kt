@@ -4,6 +4,9 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
 import android.os.Process
 import android.os.UserManager
 import org.sableos.start.model.AppEntry
@@ -22,9 +25,13 @@ class LauncherAppsRepository(
 
     fun loadApps(): List<AppEntry> {
         val locale = Locale.getDefault()
+        val density = appContext.resources.displayMetrics.densityDpi
 
         return userManager.userProfiles
             .flatMap { user ->
+                val profileSerial =
+                    userManager.getSerialNumberForUser(user)
+
                 launcherApps
                     .getActivityList(null, user)
                     .map { info ->
@@ -32,6 +39,15 @@ class LauncherAppsRepository(
                             label = info.label.toString(),
                             component = info.componentName,
                             user = user,
+                            profileSerial = profileSerial,
+                            icon =
+                                try {
+                                    drawableToBitmap(
+                                        info.getBadgedIcon(density),
+                                    )
+                                } catch (_: RuntimeException) {
+                                    null
+                                },
                         )
                     }
             }
@@ -46,7 +62,7 @@ class LauncherAppsRepository(
                         it.component.className
                     }
                     .thenBy {
-                        userManager.getSerialNumberForUser(it.user)
+                        it.profileSerial
                     },
             )
     }
@@ -86,5 +102,27 @@ class LauncherAppsRepository(
 
     fun unregisterCallback(callback: LauncherApps.Callback) {
         launcherApps.unregisterCallback(callback)
+    }
+
+    private fun drawableToBitmap(drawable: Drawable): Bitmap {
+        val bitmap =
+            Bitmap.createBitmap(
+                ICON_BITMAP_SIZE_PX,
+                ICON_BITMAP_SIZE_PX,
+                Bitmap.Config.ARGB_8888,
+            )
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(
+            0,
+            0,
+            canvas.width,
+            canvas.height,
+        )
+        drawable.draw(canvas)
+        return bitmap
+    }
+
+    private companion object {
+        const val ICON_BITMAP_SIZE_PX = 128
     }
 }
