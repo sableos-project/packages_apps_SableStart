@@ -2,7 +2,6 @@ package org.sableos.start.ui
 
 import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -43,7 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
@@ -56,7 +56,12 @@ import kotlinx.coroutines.delay
 import org.sableos.start.live.LiveAvailability
 import org.sableos.start.live.LiveDatum
 import org.sableos.start.live.LiveSurfaceSnapshot
+import org.sableos.start.model.AccentPreset
 import org.sableos.start.model.AppEntry
+import org.sableos.start.model.AppearanceConfig
+import org.sableos.start.model.CornerStyle
+import org.sableos.start.model.ResolvedAppearance
+import org.sableos.start.model.SurfaceStyle
 import org.sableos.start.platform.LiveSurfaceRepository
 import java.util.Calendar
 import java.util.Date
@@ -69,30 +74,14 @@ private enum class SableStartScreen {
     Search,
     Pinned,
     Settings,
+    Appearance,
     Live,
     LockPreview,
 }
 
-private val SableBlue = Color(0xFF4D9CFF)
 private val SableGreen = Color(0xFF35C66B)
 private val SablePurple = Color(0xFF7A42E8)
 private val SableSlate = Color(0xFF45515F)
-private val SableOrange = Color(0xFFF28C45)
-private val SablePanel = Color(0xFF17191D)
-private val SablePanelRaised = Color(0xFF22252A)
-private val SableMuted = Color(0xFFB8BBC3)
-
-private val SableColors =
-    darkColorScheme(
-        primary = SableBlue,
-        onPrimary = Color.Black,
-        background = Color.Black,
-        onBackground = Color.White,
-        surface = SablePanel,
-        onSurface = Color.White,
-        surfaceVariant = SablePanelRaised,
-        onSurfaceVariant = SableMuted,
-    )
 
 private val SableTypography =
     Typography(
@@ -147,12 +136,15 @@ fun SableStartRoot(
     apps: List<AppEntry>,
     pinnedApps: List<AppEntry>,
     recentApps: List<AppEntry>,
+    appearance: ResolvedAppearance,
     liveSurfaceRepository: LiveSurfaceRepository,
     liveRefreshGeneration: Int,
     onLaunchApp: (AppEntry) -> Unit,
     onTogglePinned: (AppEntry) -> Unit,
     onOpenAppInfo: (AppEntry) -> Unit,
     onRequestLivePermissions: () -> Unit,
+    onAppearanceChanged: (AppearanceConfig) -> Unit,
+    onResetAppearance: () -> Unit,
 ) {
     var screen by remember {
         mutableStateOf(SableStartScreen.Start)
@@ -175,9 +167,7 @@ fun SableStartRoot(
             val untilNextMinute =
                 60_000L - (now % 60_000L)
 
-            delay(
-                untilNextMinute.coerceAtLeast(1_000L),
-            )
+            delay(untilNextMinute.coerceAtLeast(1_000L))
         }
     }
 
@@ -192,20 +182,37 @@ fun SableStartRoot(
         enabled = screen != SableStartScreen.Start,
     ) {
         screen =
-            if (screen == SableStartScreen.Context) {
-                SableStartScreen.Apps
-            } else {
-                SableStartScreen.Start
+            when (screen) {
+                SableStartScreen.Context -> SableStartScreen.Apps
+                SableStartScreen.Appearance,
+                SableStartScreen.Live,
+                SableStartScreen.LockPreview,
+                -> SableStartScreen.Settings
+                else -> SableStartScreen.Start
             }
     }
 
+    val colors =
+        remember(appearance.token) {
+            darkColorScheme(
+                primary = Color(appearance.primaryArgb),
+                onPrimary = Color(appearance.onPrimaryArgb),
+                background = Color(appearance.backgroundArgb),
+                onBackground = Color(appearance.onBackgroundArgb),
+                surface = Color(appearance.surfaceArgb),
+                onSurface = Color(appearance.onSurfaceArgb),
+                surfaceVariant = Color(appearance.surfaceVariantArgb),
+                onSurfaceVariant = Color(appearance.onSurfaceVariantArgb),
+            )
+        }
+
     MaterialTheme(
-        colorScheme = SableColors,
+        colorScheme = colors,
         typography = SableTypography,
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.background,
         ) {
             when (screen) {
                 SableStartScreen.Start ->
@@ -214,6 +221,7 @@ fun SableStartRoot(
                         pinnedCount = pinnedApps.size,
                         recentCount = recentApps.size,
                         nowEpochMs = nowEpochMs,
+                        appearance = appearance,
                         onAllApps = {
                             screen = SableStartScreen.Apps
                         },
@@ -231,6 +239,7 @@ fun SableStartRoot(
                 SableStartScreen.Apps ->
                     AppsScreen(
                         apps = apps,
+                        cornerDp = appearance.cornerDp,
                         onSearch = {
                             screen = SableStartScreen.Search
                         },
@@ -255,6 +264,7 @@ fun SableStartRoot(
                                 pinnedApps.any {
                                     it.stableId == app.stableId
                                 },
+                            cornerDp = appearance.cornerDp,
                             onOpen = {
                                 onLaunchApp(app)
                             },
@@ -271,6 +281,7 @@ fun SableStartRoot(
                 SableStartScreen.Search ->
                     SearchScreen(
                         apps = apps,
+                        cornerDp = appearance.cornerDp,
                         onLaunchApp = onLaunchApp,
                         onOpenContext = { app ->
                             selectedApp = app
@@ -282,6 +293,7 @@ fun SableStartRoot(
                     PinnedRecentScreen(
                         pinnedApps = pinnedApps,
                         recentApps = recentApps,
+                        cornerDp = appearance.cornerDp,
                         onLaunchApp = onLaunchApp,
                         onOpenContext = { app ->
                             selectedApp = app
@@ -291,6 +303,10 @@ fun SableStartRoot(
 
                 SableStartScreen.Settings ->
                     SableStartSettingsScreen(
+                        cornerDp = appearance.cornerDp,
+                        onAppearance = {
+                            screen = SableStartScreen.Appearance
+                        },
                         onLive = {
                             screen = SableStartScreen.Live
                         },
@@ -299,9 +315,17 @@ fun SableStartRoot(
                         },
                     )
 
+                SableStartScreen.Appearance ->
+                    AppearanceScreen(
+                        appearance = appearance,
+                        onAppearanceChanged = onAppearanceChanged,
+                        onResetAppearance = onResetAppearance,
+                    )
+
                 SableStartScreen.Live ->
                     LiveSurfaceScreen(
                         snapshot = liveSnapshot,
+                        cornerDp = appearance.cornerDp,
                         onRequestPermissions = onRequestLivePermissions,
                     )
 
@@ -309,6 +333,7 @@ fun SableStartRoot(
                     LockPreviewScreen(
                         timeText = liveSnapshot.timeText,
                         dateText = liveSnapshot.dateText,
+                        appearance = appearance,
                     )
             }
         }
@@ -321,6 +346,7 @@ private fun StartScreen(
     pinnedCount: Int,
     recentCount: Int,
     nowEpochMs: Long,
+    appearance: ResolvedAppearance,
     onAllApps: () -> Unit,
     onSearch: () -> Unit,
     onPinned: () -> Unit,
@@ -362,9 +388,9 @@ private fun StartScreen(
                         .background(
                             Brush.verticalGradient(
                                 listOf(
-                                    Color(0xFF6676A8),
-                                    Color(0xFF3D536D),
-                                    Color.Black,
+                                    Color(appearance.heroTopArgb),
+                                    Color(appearance.heroMiddleArgb),
+                                    MaterialTheme.colorScheme.background,
                                 ),
                             ),
                         )
@@ -379,7 +405,7 @@ private fun StartScreen(
                     Text(
                         text = dateText,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.88f),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.88f),
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
@@ -390,7 +416,7 @@ private fun StartScreen(
                     Text(
                         text = "A calmer device\nfor a more intentional day.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.82f),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.82f),
                     )
                 }
             }
@@ -412,7 +438,9 @@ private fun StartScreen(
                         title = "all apps",
                         subtitle = "${apps.size} available",
                         mark = "A",
-                        color = SableBlue,
+                        color = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        cornerDp = appearance.cornerDp,
                         modifier = Modifier.weight(1f),
                         onClick = onAllApps,
                     )
@@ -421,6 +449,8 @@ private fun StartScreen(
                         subtitle = "apps on this device",
                         mark = "⌕",
                         color = SablePurple,
+                        contentColor = Color.White,
+                        cornerDp = appearance.cornerDp,
                         modifier = Modifier.weight(1f),
                         onClick = onSearch,
                     )
@@ -437,6 +467,8 @@ private fun StartScreen(
                         subtitle = "$pinnedCount pinned · $recentCount recent",
                         mark = "P",
                         color = SableGreen,
+                        contentColor = Color.Black,
+                        cornerDp = appearance.cornerDp,
                         modifier = Modifier.weight(1f),
                         onClick = onPinned,
                     )
@@ -445,6 +477,8 @@ private fun StartScreen(
                         subtitle = "Sable Start",
                         mark = "⚙",
                         color = SableSlate,
+                        contentColor = Color.White,
+                        cornerDp = appearance.cornerDp,
                         modifier = Modifier.weight(1f),
                         onClick = onSettings,
                     )
@@ -459,7 +493,7 @@ private fun StartScreen(
                 Text(
                     text = "Launcher-visible apps · ${apps.size}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SableMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -472,6 +506,8 @@ private fun HomeTile(
     subtitle: String,
     mark: String,
     color: Color,
+    contentColor: Color,
+    cornerDp: Int,
     modifier: Modifier,
     onClick: () -> Unit,
 ) {
@@ -479,7 +515,7 @@ private fun HomeTile(
         modifier =
             modifier
                 .height(142.dp)
-                .clip(RoundedCornerShape(6.dp))
+                .clip(RoundedCornerShape(cornerDp.dp))
                 .background(color)
                 .clickable(onClick = onClick)
                 .padding(14.dp),
@@ -489,17 +525,19 @@ private fun HomeTile(
             text = mark,
             fontSize = 28.sp,
             fontWeight = FontWeight.Medium,
+            color = contentColor,
         )
         Column {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
+                color = contentColor,
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.86f),
+                color = contentColor.copy(alpha = 0.84f),
             )
         }
     }
@@ -508,6 +546,7 @@ private fun HomeTile(
 @Composable
 private fun AppsScreen(
     apps: List<AppEntry>,
+    cornerDp: Int,
     onSearch: () -> Unit,
     onLaunchApp: (AppEntry) -> Unit,
     onOpenContext: (AppEntry) -> Unit,
@@ -527,15 +566,15 @@ private fun AppsScreen(
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = 52.dp)
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(SablePanelRaised)
+                    .clip(RoundedCornerShape((cornerDp * 3).coerceAtLeast(20).dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable(onClick = onSearch)
                     .padding(horizontal = 18.dp, vertical = 15.dp),
         ) {
             Text(
                 text = "⌕   Search apps…",
                 style = MaterialTheme.typography.bodyLarge,
-                color = SableMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -550,6 +589,7 @@ private fun AppsScreen(
             ) { app ->
                 AppRow(
                     app = app,
+                    cornerDp = cornerDp,
                     onLaunch = {
                         onLaunchApp(app)
                     },
@@ -565,6 +605,7 @@ private fun AppsScreen(
 @Composable
 private fun SearchScreen(
     apps: List<AppEntry>,
+    cornerDp: Int,
     onLaunchApp: (AppEntry) -> Unit,
     onOpenContext: (AppEntry) -> Unit,
 ) {
@@ -597,7 +638,7 @@ private fun SearchScreen(
             },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape((cornerDp * 3).coerceAtLeast(20).dp),
             label = {
                 Text("Search apps")
             },
@@ -607,7 +648,7 @@ private fun SearchScreen(
         Text(
             text = "${results.size} results",
             style = MaterialTheme.typography.bodyMedium,
-            color = SableMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(8.dp))
 
@@ -620,6 +661,7 @@ private fun SearchScreen(
             ) { app ->
                 AppRow(
                     app = app,
+                    cornerDp = cornerDp,
                     onLaunch = {
                         onLaunchApp(app)
                     },
@@ -635,6 +677,7 @@ private fun SearchScreen(
 @Composable
 private fun AppRow(
     app: AppEntry,
+    cornerDp: Int,
     onLaunch: () -> Unit,
     onContext: () -> Unit,
 ) {
@@ -649,6 +692,7 @@ private fun AppRow(
     ) {
         AppIcon(
             app = app,
+            cornerDp = cornerDp,
             modifier = Modifier.size(44.dp),
         )
         Spacer(Modifier.width(14.dp))
@@ -663,7 +707,7 @@ private fun AppRow(
             Text(
                 text = app.component.packageName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = SableMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -675,7 +719,7 @@ private fun AppRow(
                     .clickable(onClick = onContext)
                     .padding(horizontal = 12.dp, vertical = 10.dp),
             fontSize = 24.sp,
-            color = SableMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -683,6 +727,7 @@ private fun AppRow(
 @Composable
 private fun AppIcon(
     app: AppEntry,
+    cornerDp: Int,
     modifier: Modifier,
 ) {
     val icon = app.icon
@@ -693,15 +738,15 @@ private fun AppIcon(
             contentDescription = "${app.label} icon",
             modifier =
                 modifier.clip(
-                    RoundedCornerShape(10.dp),
+                    RoundedCornerShape((cornerDp + 2).dp),
                 ),
         )
     } else {
         Box(
             modifier =
                 modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(SablePanelRaised),
+                    .clip(RoundedCornerShape((cornerDp + 2).dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -720,6 +765,7 @@ private fun AppIcon(
 private fun AppContextScreen(
     app: AppEntry,
     pinned: Boolean,
+    cornerDp: Int,
     onOpen: () -> Unit,
     onAppInfo: () -> Unit,
     onTogglePinned: () -> Unit,
@@ -736,6 +782,7 @@ private fun AppContextScreen(
 
         AppIcon(
             app = app,
+            cornerDp = cornerDp,
             modifier = Modifier.size(78.dp),
         )
 
@@ -743,12 +790,12 @@ private fun AppContextScreen(
         Text(
             text = app.component.packageName,
             style = MaterialTheme.typography.bodyLarge,
-            color = SableMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = "profile ${app.profileSerial}",
             style = MaterialTheme.typography.bodyMedium,
-            color = SableMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(Modifier.height(22.dp))
@@ -759,10 +806,11 @@ private fun AppContextScreen(
                 Modifier
                     .fillMaxWidth()
                     .height(56.dp),
+            shape = RoundedCornerShape(cornerDp.dp),
             colors =
                 ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF9BCBFF),
-                    contentColor = Color.Black,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
         ) {
             Row(
@@ -792,7 +840,7 @@ private fun AppContextScreen(
                 "Application management remains owned by Android. " +
                     "Sable Start does not silently uninstall or change package state.",
             style = MaterialTheme.typography.bodyMedium,
-            color = SableMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -822,6 +870,7 @@ private fun ContextAction(
 private fun PinnedRecentScreen(
     pinnedApps: List<AppEntry>,
     recentApps: List<AppEntry>,
+    cornerDp: Int,
     onLaunchApp: (AppEntry) -> Unit,
     onOpenContext: (AppEntry) -> Unit,
 ) {
@@ -839,7 +888,7 @@ private fun PinnedRecentScreen(
                 Text(
                     text = "Nothing pinned yet. Use an app's context menu to pin it.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SableMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(14.dp))
             }
@@ -851,6 +900,7 @@ private fun PinnedRecentScreen(
         ) { app ->
             AppRow(
                 app = app,
+                cornerDp = cornerDp,
                 onLaunch = {
                     onLaunchApp(app)
                 },
@@ -867,14 +917,14 @@ private fun PinnedRecentScreen(
             Text(
                 text = "Only successful launches made through Sable Start are recorded.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = SableMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(8.dp))
             if (recentApps.isEmpty()) {
                 Text(
                     text = "No launcher-local recent apps yet.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SableMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -885,6 +935,7 @@ private fun PinnedRecentScreen(
         ) { app ->
             AppRow(
                 app = app,
+                cornerDp = cornerDp,
                 onLaunch = {
                     onLaunchApp(app)
                 },
@@ -898,6 +949,8 @@ private fun PinnedRecentScreen(
 
 @Composable
 private fun SableStartSettingsScreen(
+    cornerDp: Int,
+    onAppearance: () -> Unit,
     onLive: () -> Unit,
     onLockPreview: () -> Unit,
 ) {
@@ -920,22 +973,31 @@ private fun SableStartSettingsScreen(
                     "Launcher-local controls only. Android system settings, " +
                         "permissions, networking, telephony, storage, and updates remain platform-owned.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = SableMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(20.dp))
         }
 
         item {
             SettingsRow(
+                mark = "◐",
+                title = "Appearance",
+                detail = "Surface, accent, and corner style",
+                cornerDp = cornerDp,
+                onClick = onAppearance,
+            )
+            SettingsRow(
                 mark = "◎",
                 title = "Live local data",
                 detail = "Photos, music, and calendar — opt in",
+                cornerDp = cornerDp,
                 onClick = onLive,
             )
             SettingsRow(
                 mark = "▣",
                 title = "Lock preview",
                 detail = "Visual concept only; does not replace Android lock screen",
+                cornerDp = cornerDp,
                 onClick = onLockPreview,
             )
             Spacer(Modifier.height(22.dp))
@@ -946,10 +1008,10 @@ private fun SableStartSettingsScreen(
             Spacer(Modifier.height(8.dp))
             Text(
                 text =
-                    "Pinned apps and launcher-local recents stay in Sable Start's private local storage. " +
+                    "Appearance, pinned apps, and launcher-local recents stay in Sable Start's private local storage. " +
                         "No Usage Stats or network access is required for these surfaces.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = SableMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -960,6 +1022,7 @@ private fun SettingsRow(
     mark: String,
     title: String,
     detail: String,
+    cornerDp: Int,
     onClick: () -> Unit,
 ) {
     Row(
@@ -967,7 +1030,7 @@ private fun SettingsRow(
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 72.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(cornerDp.dp))
                 .clickable(onClick = onClick)
                 .padding(horizontal = 10.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -975,7 +1038,7 @@ private fun SettingsRow(
         Text(
             text = mark,
             fontSize = 24.sp,
-            color = SableBlue,
+            color = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -986,13 +1049,241 @@ private fun SettingsRow(
             Text(
                 text = detail,
                 style = MaterialTheme.typography.bodyMedium,
-                color = SableMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Text(
             text = "›",
-            color = SableMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 24.sp,
+        )
+    }
+}
+
+@Composable
+private fun AppearanceScreen(
+    appearance: ResolvedAppearance,
+    onAppearanceChanged: (AppearanceConfig) -> Unit,
+    onResetAppearance: () -> Unit,
+) {
+    val config = appearance.config
+
+    LazyColumn(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(horizontal = 22.dp, vertical = 20.dp),
+    ) {
+        item {
+            MetroHeading("appearance")
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = "R8 launcher theme",
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Text(
+                text =
+                    "These choices affect Sable Start only. They do not change Android's system theme, " +
+                        "other applications, wallpapers, or security surfaces.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(20.dp))
+
+            AppearancePreview(appearance)
+            Spacer(Modifier.height(26.dp))
+
+            AppearanceSectionTitle("Surface")
+            SurfaceStyle.entries.forEach { style ->
+                AppearanceChoice(
+                    title = style.displayName,
+                    detail = style.detail,
+                    selected = config.surfaceStyle == style,
+                    accent = MaterialTheme.colorScheme.primary,
+                    cornerDp = appearance.cornerDp,
+                    onClick = {
+                        onAppearanceChanged(
+                            config.copy(surfaceStyle = style),
+                        )
+                    },
+                )
+            }
+
+            Spacer(Modifier.height(22.dp))
+            AppearanceSectionTitle("Accent")
+            AccentPreset.entries.forEach { preset ->
+                val swatch =
+                    when (preset) {
+                        AccentPreset.Blue -> Color(0xFF4D9CFF)
+                        AccentPreset.Green -> Color(0xFF35C66B)
+                        AccentPreset.Purple -> Color(0xFF9B7BFF)
+                        AccentPreset.Orange -> Color(0xFFF28C45)
+                        AccentPreset.Slate -> Color(0xFF7E8C9D)
+                    }
+
+                AppearanceChoice(
+                    title = preset.displayName,
+                    detail = "Primary launcher accent",
+                    selected = config.accentPreset == preset,
+                    accent = swatch,
+                    cornerDp = appearance.cornerDp,
+                    onClick = {
+                        onAppearanceChanged(
+                            config.copy(accentPreset = preset),
+                        )
+                    },
+                )
+            }
+
+            Spacer(Modifier.height(22.dp))
+            AppearanceSectionTitle("Corners")
+            CornerStyle.entries.forEach { style ->
+                AppearanceChoice(
+                    title = style.displayName,
+                    detail = style.detail,
+                    selected = config.cornerStyle == style,
+                    accent = MaterialTheme.colorScheme.primary,
+                    cornerDp = appearance.cornerDp,
+                    onClick = {
+                        onAppearanceChanged(
+                            config.copy(cornerStyle = style),
+                        )
+                    },
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+            TextButton(
+                onClick = onResetAppearance,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Reset Sable Start appearance")
+            }
+            Spacer(Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun AppearancePreview(
+    appearance: ResolvedAppearance,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(appearance.cornerDp.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(appearance.heroTopArgb),
+                            Color(appearance.heroMiddleArgb),
+                            MaterialTheme.colorScheme.surface,
+                        ),
+                    ),
+                )
+                .padding(18.dp),
+    ) {
+        Text(
+            text = "preview",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.76f),
+        )
+        Spacer(Modifier.height(28.dp))
+        Text(
+            text = "Sable Start",
+            style = MaterialTheme.typography.headlineLarge,
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .height(34.dp)
+                        .weight(1f)
+                        .clip(RoundedCornerShape(appearance.cornerDp.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppearanceSectionTitle(
+    text: String,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleLarge,
+    )
+    Spacer(Modifier.height(8.dp))
+}
+
+@Composable
+private fun AppearanceChoice(
+    title: String,
+    detail: String,
+    selected: Boolean,
+    accent: Color,
+    cornerDp: Int,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .clip(RoundedCornerShape(cornerDp.dp))
+                .background(
+                    if (selected) {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    } else {
+                        Color.Transparent
+                    },
+                )
+                .clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(accent),
+        )
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight =
+                    if (selected) {
+                        FontWeight.Medium
+                    } else {
+                        FontWeight.Normal
+                    },
+            )
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = if (selected) "✓" else "",
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.titleLarge,
         )
     }
 }
@@ -1000,6 +1291,7 @@ private fun SettingsRow(
 @Composable
 private fun LiveSurfaceScreen(
     snapshot: LiveSurfaceSnapshot,
+    cornerDp: Int,
     onRequestPermissions: () -> Unit,
 ) {
     Box(
@@ -1011,7 +1303,7 @@ private fun LiveSurfaceScreen(
                         listOf(
                             Color(0xFF8C4E34),
                             Color(0xFF314238),
-                            Color(0xFF121413),
+                            MaterialTheme.colorScheme.background,
                         ),
                     ),
                 )
@@ -1039,21 +1331,21 @@ private fun LiveSurfaceScreen(
                 Text(
                     text = "updated ${snapshot.timeText}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.82f),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.82f),
                 )
                 Spacer(Modifier.height(20.dp))
             }
 
             item {
-                LiveCard("▣", snapshot.photos)
+                LiveCard("▣", snapshot.photos, cornerDp)
                 Spacer(Modifier.height(10.dp))
-                LiveCard("♪", snapshot.music)
+                LiveCard("♪", snapshot.music, cornerDp)
                 Spacer(Modifier.height(10.dp))
-                LiveCard("17", snapshot.calendar)
+                LiveCard("17", snapshot.calendar, cornerDp)
                 Spacer(Modifier.height(10.dp))
-                LiveCard("☁", snapshot.weather)
+                LiveCard("☁", snapshot.weather, cornerDp)
                 Spacer(Modifier.height(10.dp))
-                LiveCard("✓", snapshot.tasks)
+                LiveCard("✓", snapshot.tasks, cornerDp)
                 Spacer(Modifier.height(16.dp))
             }
 
@@ -1066,6 +1358,7 @@ private fun LiveSurfaceScreen(
                     Button(
                         onClick = onRequestPermissions,
                         modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(cornerDp.dp),
                     ) {
                         Text("Enable local live data")
                     }
@@ -1079,7 +1372,7 @@ private fun LiveSurfaceScreen(
                         "Weather and Tasks remain unavailable until explicit providers are configured. " +
                             "Sable Start does not enable network access just to populate this surface.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.70f),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.70f),
                 )
             }
         }
@@ -1090,6 +1383,7 @@ private fun LiveSurfaceScreen(
 private fun LiveCard(
     mark: String,
     datum: LiveDatum,
+    cornerDp: Int,
 ) {
     val status =
         when (datum.availability) {
@@ -1106,8 +1400,8 @@ private fun LiveCard(
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 72.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color.Black.copy(alpha = 0.55f))
+                .clip(RoundedCornerShape(cornerDp.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.78f))
                 .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1118,12 +1412,12 @@ private fun LiveCard(
             Text(
                 datum.detail,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.76f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 status,
                 style = MaterialTheme.typography.labelLarge,
-                color = Color.White.copy(alpha = 0.58f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
             )
         }
     }
@@ -1133,6 +1427,7 @@ private fun LiveCard(
 private fun LockPreviewScreen(
     timeText: String,
     dateText: String,
+    appearance: ResolvedAppearance,
 ) {
     Box(
         modifier =
@@ -1141,33 +1436,15 @@ private fun LockPreviewScreen(
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            Color(0xFF46608F),
-                            Color(0xFF9C7190),
-                            Color(0xFF1B3045),
+                            Color(appearance.heroTopArgb),
+                            Color(0xFF76566F),
+                            Color(appearance.heroMiddleArgb),
+                            MaterialTheme.colorScheme.background,
                         ),
                     ),
                 )
                 .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val ridge =
-                Path().apply {
-                    moveTo(0f, size.height * 0.74f)
-                    lineTo(size.width * 0.17f, size.height * 0.66f)
-                    lineTo(size.width * 0.31f, size.height * 0.70f)
-                    lineTo(size.width * 0.53f, size.height * 0.54f)
-                    lineTo(size.width * 0.68f, size.height * 0.68f)
-                    lineTo(size.width, size.height * 0.60f)
-                    lineTo(size.width, size.height)
-                    lineTo(0f, size.height)
-                    close()
-                }
-            drawPath(
-                path = ridge,
-                color = Color(0xCC102334),
-            )
-        }
-
         Column(
             modifier =
                 Modifier
@@ -1204,7 +1481,7 @@ private fun LockPreviewScreen(
                 text =
                     "Visual concept only — Android Keyguard/SystemUI remains the real security boundary.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.70f),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.70f),
             )
         }
     }
@@ -1227,7 +1504,7 @@ private fun EmptyState(
         Text(
             text = detail,
             style = MaterialTheme.typography.bodyMedium,
-            color = SableMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
