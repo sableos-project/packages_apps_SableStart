@@ -15,6 +15,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import org.sableos.start.bridge.SableStartNative
 import org.sableos.start.model.AppEntry
+import org.sableos.start.model.AppearanceConfig
+import org.sableos.start.model.ResolvedAppearance
+import org.sableos.start.platform.AppearanceStore
 import org.sableos.start.platform.LauncherAppsRepository
 import org.sableos.start.platform.LauncherStateStore
 import org.sableos.start.platform.LiveSurfaceRepository
@@ -26,6 +29,7 @@ class SableStartActivity : ComponentActivity() {
     private lateinit var launcherAppsRepository: LauncherAppsRepository
     private lateinit var launcherStateStore: LauncherStateStore
     private lateinit var liveSurfaceRepository: LiveSurfaceRepository
+    private lateinit var appearanceStore: AppearanceStore
 
     private val appsState =
         mutableStateOf<List<AppEntry>>(emptyList())
@@ -35,6 +39,9 @@ class SableStartActivity : ComponentActivity() {
 
     private val recentState =
         mutableStateOf<List<AppEntry>>(emptyList())
+
+    private val appearanceState =
+        mutableStateOf<ResolvedAppearance?>(null)
 
     private val liveRefreshGeneration =
         mutableStateOf(0)
@@ -109,21 +116,34 @@ class SableStartActivity : ComponentActivity() {
             LauncherStateStore(this)
         liveSurfaceRepository =
             LiveSurfaceRepository(this)
+        appearanceStore =
+            AppearanceStore(this)
 
+        applyAppearance(
+            config = appearanceStore.load(),
+            persist = false,
+        )
         refreshInventory()
 
         setContent {
-            SableStartRoot(
-                apps = appsState.value,
-                pinnedApps = pinnedState.value,
-                recentApps = recentState.value,
-                liveSurfaceRepository = liveSurfaceRepository,
-                liveRefreshGeneration = liveRefreshGeneration.value,
-                onLaunchApp = ::launchApp,
-                onTogglePinned = ::togglePinned,
-                onOpenAppInfo = ::openAppInfo,
-                onRequestLivePermissions = ::requestLivePermissions,
-            )
+            val appearance = appearanceState.value
+
+            if (appearance != null) {
+                SableStartRoot(
+                    apps = appsState.value,
+                    pinnedApps = pinnedState.value,
+                    recentApps = recentState.value,
+                    appearance = appearance,
+                    liveSurfaceRepository = liveSurfaceRepository,
+                    liveRefreshGeneration = liveRefreshGeneration.value,
+                    onLaunchApp = ::launchApp,
+                    onTogglePinned = ::togglePinned,
+                    onOpenAppInfo = ::openAppInfo,
+                    onRequestLivePermissions = ::requestLivePermissions,
+                    onAppearanceChanged = ::applyAppearance,
+                    onResetAppearance = ::resetAppearance,
+                )
+            }
         }
     }
 
@@ -234,6 +254,30 @@ class SableStartActivity : ComponentActivity() {
         requestPermissions(
             permissions.toTypedArray(),
             LIVE_PERMISSION_REQUEST_CODE,
+        )
+    }
+
+    private fun applyAppearance(
+        config: AppearanceConfig,
+        persist: Boolean = true,
+    ) {
+        val resolved =
+            SableStartNative.resolveAppearance(
+                handle = nativeHandle,
+                config = config,
+            )
+
+        if (persist) {
+            appearanceStore.save(resolved.config)
+        }
+
+        appearanceState.value = resolved
+    }
+
+    private fun resetAppearance() {
+        applyAppearance(
+            config = appearanceStore.reset(),
+            persist = false,
         )
     }
 
