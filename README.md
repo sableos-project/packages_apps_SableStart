@@ -1,65 +1,94 @@
 # Sable Start
 
-Canonical repository for the SableOS launcher and shell.
+Canonical SableOS launcher/shell repository.
 
-Android checkout path: `packages/apps/SableStart`.
+Android checkout path: `packages/apps/SableStart` when integrated into an Android source tree.
 
-Sable Start is common product code. Device repositories must not carry copies of this application. Device and Android-substrate differences should be handled through stable interfaces and bounded adapters.
+Sable Start is common product code. Device repositories must not carry copies of this application; Android/device differences belong behind bounded platform/device adapters.
 
-## Current source migration status
+## Current repository/source status
 
-The validated R3 source has been recursively captured, byte-verified, committed, and pushed on the migration branch:
+The default `main` branch still primarily reflects the organization migration/documentation baseline. The active validated/production source lineage has continued on development branches while the original migration/integration PR remains separate.
+
+Important source history:
 
 ```text
 m1/sablestart-portability-close-20260911
-commit 059d5d23e4186bbd3119180433a5e6206b7d95bd
-tree   c00fd741c401fdd1421e8971bfb82f01c4b7c7da
+  sealed migration baseline:
+  commit 059d5d23e4186bbd3119180433a5e6206b7d95bd
+  tree   c00fd741c401fdd1421e8971bfb82f01c4b7c7da
+
+R7 production-surface work
+  merged into the active development lineage as PR #9
+  merge commit fcd1c41d416b17030da683cb66ed077e37b92828
+
+R8 appearance/customization prototype
+  PR #10 / r8/sablestart-customization-20260916
+  DRAFT — requires scope correction before merge
 ```
 
-PR #1 imports exactly the 12 validated source files. The migration commit has intentionally not been rewritten merely to follow later documentation commits on `main`.
+PR #1 remains the original migration/source-integration boundary; do not describe `main` as containing every later production source commit until that integration actually occurs.
 
-A direct build/reconstruction proof from the migrated checkout is a separate gate and must close before the repository is treated as fully canonical for new feature development.
+See [`docs/CURRENT_STATUS.md`](docs/CURRENT_STATUS.md) for the current branch/PR status and [`docs/MIGRATION_STATUS.md`](docs/MIGRATION_STATUS.md) for preserved R3–R5 migration/build evidence.
 
-See `docs/MIGRATION_STATUS.md` for the migration evidence/claim boundary.
+## Established launcher behavior
 
-## Next functional milestone: R6
+The active development lineage has moved beyond the old "next R6" description. Sable Start architecture now includes the production direction for:
 
-After migrated-source build closure, the next Sable Start milestone is **R6 — All Apps, shared Search inventory, and local-time greeting**.
+- real launcher-visible application inventory and icons;
+- shared live Search inventory;
+- exact component/profile launch behavior;
+- Start greeting;
+- Start / All Apps / App Context / Search;
+- local Pinned & Recent state;
+- Sable Start Settings;
+- bounded local Live data;
+- Lock preview only;
+- preservation of Launcher3 Quickstep as recents/gesture provider.
 
-The normative requirements are in:
+Historical R6 requirements remain in [`docs/R6_ALL_APPS_AND_GREETING.md`](docs/R6_ALL_APPS_AND_GREETING.md). Historical requirement/evidence files are preserved rather than rewritten into current R8 documents.
 
-- [`docs/R6_ALL_APPS_AND_GREETING.md`](docs/R6_ALL_APPS_AND_GREETING.md)
+## Current R8 role
 
-R6 requires:
+Sable Start is a **consumer of the shared R8-A design contract**, not the owner of an independent theme system.
 
-- complete Android launcher-visible application inventory for accessible profiles;
-- real app labels/icons and deterministic ordering;
-- visible app count;
-- live refresh on relevant package/profile changes;
-- Search backed by the same live inventory;
-- correct component/profile launch behavior;
-- a device-local time-based greeting (`Good morning`, `Good afternoon`, `Good evening`, `Good night`);
-- runtime completeness/launch/dynamic-removal evidence.
+Authoritative first-R8 customization remains:
 
-R6 does **not** include a general theme editor, launcher folders/categories, cloud search, recommendation ranking, or custom Phone/Messaging work.
+```text
+Follow system
+Light
+Dark
+bounded accent
+reset/default
+shared semantic design roles
+```
+
+The current draft PR #10 prototype contains broader Metro/Graphite/OLED surface modes and user-selectable corner styles. Those choices are **not current first-R8 requirements** and must be reconciled before that PR can become accepted R8 source.
+
+Do not add grid/density editors, icon packs, theme stores, wallpaper editors or unrelated launcher customization merely because the appearance screen exists.
 
 ## HOME/default launcher is a separate gate
 
-R6 feature correctness does not itself authorize or prove changing the device's default HOME launcher.
+Feature correctness does not by itself authorize or prove default HOME adoption.
 
 Read:
 
 - [`docs/HOME_ADOPTION_GATE.md`](docs/HOME_ADOPTION_GATE.md)
 
-That document keeps Sable Start HOME adoption, navigation/lifecycle validation, reboot persistence, and fallback/recovery separate from ordinary R6 feature testing. Until the product explicitly authorizes and validates HOME adoption, tests must not silently replace Quickstep/default HOME merely because Sable Start is launcher-capable.
+Keep launcher feature testing, HOME/default role state, navigation/lifecycle, reboot persistence and fallback/recovery as separate claims.
 
 ## Architecture
 
-See:
+Read:
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- [`docs/R6_ALL_APPS_AND_GREETING.md`](docs/R6_ALL_APPS_AND_GREETING.md)
+- [`docs/CURRENT_STATUS.md`](docs/CURRENT_STATUS.md)
 - [`docs/HOME_ADOPTION_GATE.md`](docs/HOME_ADOPTION_GATE.md)
 - [`docs/MIGRATION_STATUS.md`](docs/MIGRATION_STATUS.md)
+- historical [`docs/R6_ALL_APPS_AND_GREETING.md`](docs/R6_ALL_APPS_AND_GREETING.md)
 
-Organization-wide product direction is maintained by `sableos-project/.github/docs/DEVELOPMENT_RELEASE_PLAN.md` until the central `sableos` project repository transition is complete.
+Organization-wide current direction lives in `sableos-project/.github/docs/DEVELOPMENT_RELEASE_PLAN.md`; the detailed R8 shared application/design architecture lives in `sableos-project/platform_sable`.
+
+## Integration rule
+
+A successful Sable Start module/app build is not sufficient product-image evidence. Product inclusion must separately prove product selection, concrete PRODUCT_OUT install identity, target-files/image membership and runtime package/HOME behavior as required by the claim.
