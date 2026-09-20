@@ -1,5 +1,19 @@
 # Sable Start
 
+![Local CI](https://img.shields.io/badge/CI-local%20direct-active-2ea44f)
+![R9 Launcher](https://img.shields.io/badge/R9%20launcher%20visual-PASS-2ea44f)
+![Fresh Panther](https://img.shields.io/badge/fresh%20Panther%20build-IN%20PROGRESS-f0ad4e)
+![Pixel 7](https://img.shields.io/badge/Pixel%207%20physical-PENDING-lightgrey)
+![Titan 2](https://img.shields.io/badge/Titan%202-keyboard--first%20QUEUED-6f42c1)
+
+## Current R9 product status
+
+Sable Start is now the **Sable presentation layer hosted by Launcher3/Quickstep**, not a standalone HOME APK. The product HOME package is `com.android.launcher3`, with `com.android.launcher3.sable.SableQuickstepLauncher` owning the Android HOME/Quickstep lifecycle while `SableStartScreen` renders the Sable NORMAL-state experience.
+
+The Pixel 7 visual set is accepted for Start, All Apps/Sable Rail, Search/Command, Peek, Local Context, Appearance, light/dark system bars and alternate accent. A fresh full Panther build and physical HOME/Overview/Recents runtime acceptance are the remaining R9 closure steps.
+
+The public repository preserves canonical SableStart source/history; integration authority for the active R9 product line is tracked in the private integration repository until synchronized here.
+
 Canonical SableOS launcher/shell repository.
 
 Android checkout path: `packages/apps/SableStart` when integrated into an Android source tree.
@@ -50,11 +64,11 @@ The active development lineage has moved beyond the old "next R6" description. S
 
 Historical R6 requirements remain in [`docs/R6_ALL_APPS_AND_GREETING.md`](docs/R6_ALL_APPS_AND_GREETING.md). Historical requirement/evidence files are preserved rather than rewritten into current R8 documents.
 
-## Current R8 role
+## Current launcher role
 
 Sable Start is evolving from a launcher prototype into the primary Sable-owned Start/Home/app-list/search experience, while mature Android/Launcher3 Quickstep behavior remains underneath where it provides proven recents/gesture/platform capability.
 
-The product direction is Metro-influenced but Sable-owned: large typography, information-first surfaces, low chrome, logo-derived semantic color roles, a clean app-name list without exposing package names in ordinary UI, and consistent Start/Pinned/Recent/Search behavior.
+The product direction is Metro-influenced but Sable-owned: large typography, information-first surfaces, low chrome, logo-derived semantic color roles, real launcher icons, a clean app-name list without exposing package names in ordinary UI, and consistent Start/All Apps/Search/Peek/Local Context behavior. Launcher3/Quickstep remains authoritative for HOME lifecycle, Overview/Recents and task/gesture integration.
 
 Sable Start consumes the shared Sable design/security/accessibility/localization contract; it must not invent an incompatible private theme or privilege model.
 

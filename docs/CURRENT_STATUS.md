@@ -1,6 +1,29 @@
 # Sable Start current status
 
-Status date: **2026-09-16**.
+
+> **Current R9 overlay — 2026-09-20:** the product architecture has moved beyond
+> the standalone SableStart HOME model described by older R7/R8 branch notes.
+> Launcher3/Quickstep now owns HOME/Overview/Recents/lifecycle, while
+> `SableStartScreen` is the Sable-owned presentation in the NORMAL launcher
+> state. The standalone SableStart product APK is retired.
+>
+> Current integration status:
+>
+> ```text
+> R9_LAUNCHER3_FOUNDATION=PASS
+> R9_SABLESTART_VISUAL_REVIEW_SET=PASS
+> R9_SABLESTART_PRODUCT_IDENTITY=APPROVED
+> R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT
+> R9_FRESH_PANTHER_FULL_BUILD=IN_PROGRESS
+> R9_PIXEL7_PHYSICAL_ACCEPTANCE=PENDING
+> ```
+>
+> The public repository remains the SableStart source/history home; current R9
+> integration is being qualified in the private product-integration repository
+> before synchronization back to the organization repos.
+
+
+Status date: **2026-09-20**.
 
 This file is the current-status entry point. Historical R3/R5/R6 requirement/evidence documents remain preserved separately.
 
