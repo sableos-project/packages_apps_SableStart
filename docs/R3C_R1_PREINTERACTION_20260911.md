@@ -1,5 +1,8 @@
 # Sable Start R3C-R1 pre-interaction runtime inventory — 2026-09-11
 
+> **HISTORICAL R3 EVIDENCE — 2026-09-24 classification:** preserved as exact milestone evidence. It predates the final R9 standalone SableLauncher HOME architecture and must not be used as current launcher-role status.
+
+
 This document records the read-only pre-interaction state of the exact R3C-installed Sable Start artifact on Panther before any new UI input or runtime permission mutation.
 
 ## Authorization boundary
