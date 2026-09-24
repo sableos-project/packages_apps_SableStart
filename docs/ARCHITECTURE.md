@@ -1,130 +1,86 @@
-# Sable Start architecture
+# Sable Start / launcher presentation architecture
 
-Status: **normative launcher-specific architecture.**
+Status: **current repository-role architecture — 2026-09-24**
 
-Sable Start is a portable SableOS application surface, not a per-device launcher fork and not a replacement for every Android system UI component.
+This document defines what remains reusable from SableStart history after the
+accepted R9 launcher architecture change.
 
-## Ownership boundary
-
-Sable Start owns:
-
-- launcher presentation/navigation;
-- launcher-visible application discovery UX;
-- Search over the same live inventory;
-- exact component/profile launch requests through supported Android APIs;
-- local pinned state;
-- SableStart-observed recent-launch state where required;
-- launcher-local Settings;
-- bounded local Live presentation;
-- Start greeting;
-- Lock **preview** presentation;
-- consumption of the shared Sable design contract.
-
-It does **not** own:
-
-- device HAL/vendor/firmware behavior;
-- raw hardware policy;
-- Android Settings plumbing;
-- Keyguard/SystemUI replacement merely because a Lock preview exists;
-- Launcher3 Quickstep recents/gesture ownership;
-- global Usage Stats simply to manufacture richer recents;
-- common design semantics independently from `platform_sable`.
-
-## Launcher inventory boundary
-
-All Apps and Search use the same real launcher-visible Android inventory for accessible profiles.
-
-Stable identity should preserve at least:
+## Current product boundary
 
 ```text
-user/profile
-package
-component
+SableLauncher (org.sableos.launcher)
+    owns HOME and user-facing launcher semantics
+
+Launcher3QuickStep
+    owns Recents/Overview/task/gesture substrate
+    is not HOME eligible
+
+SableStart repository
+    presentation/history/reference source
+    not a shipping HOME package authority
 ```
 
-Labels/icons are presentation data, not the sole identity key.
+## Reusable semantic concepts
 
-Do not reintroduce hard-coded/fake app catalogs, fake search results or demo notification/application state into the production HOME path.
+The following Sable presentation concepts remain valid and belong in the common
+launcher product architecture where still useful:
 
-## Launch and state boundary
+- Start surface;
+- complete real launcher inventory;
+- All Apps;
+- Search/type-to-search;
+- Peek/live summaries;
+- pinned/recent state;
+- app context;
+- privacy/security-impacting permission summaries;
+- local-time greeting where retained by current product requirements;
+- real package/profile/icon/launch semantics;
+- no fabricated application or notification data.
 
-Launch the exact component for the correct profile/user through the supported platform APIs.
+## Android boundaries
 
-Pinned state is explicit SableStart-local user state.
+Common launcher presentation must continue to respect Android ownership:
 
-Recent state in the first production model is limited to launches successfully observed through Sable Start unless a future requirement explicitly justifies broader platform authority. Do not add Usage Stats permission by default.
+- package/profile discovery through supported launcher/package APIs;
+- Recents/task/gesture behavior through Quickstep/platform substrate;
+- keyguard/security through Android platform ownership;
+- Settings/default-app/app-info flows through supported intents/APIs.
 
-## Data boundary
+Do not recreate platform security or task-management services inside the launcher
+for visual convenience.
 
-UI code should not perform blocking provider I/O on the main thread. Provider-backed/local data belongs behind explicit states such as:
+## Appearance
+
+Settings is the global appearance authority. Launcher presentation consumes the
+same Follow-system/Light/Dark and semantic design roles as other Sable apps.
+
+The accepted Panther R9 physically proved global Light/Dark propagation.
+
+## Keyboard-first direction
+
+Keyboard-first is a common interaction profile, not a Titan-specific launcher
+fork.
+
+Required launcher behavior includes:
 
 ```text
-loading
-live
-permission-required
-unavailable
-error
+deterministic visible focus
+arrow/D-pad navigation
+Enter/Space activation
+Back/Escape
+type-to-search
+shortcut/command palette
+stable focus restoration
+no focus traps
+square/near-square responsive layout
+touch as secondary input
 ```
 
-Live data should use local Android/platform sources where useful. Do not add network/account dependencies simply to populate a launcher surface.
+Device-specific scan codes, Fn/Sym behavior and physical-key quirks do not belong
+in common launcher semantics.
 
-## Android system boundaries
+## Historical documents
 
-- **Quickstep:** Launcher3 Quickstep remains the recents/gesture provider unless a separately approved architecture changes this.
-- **Keyguard:** Lock remains preview/presentation only until a separately designed security/system architecture exists.
-- **Settings:** launcher Settings owns launcher-local behavior; delegate platform settings to Android.
-- **Notifications:** do not invent counts/state the app is not authorized to observe.
-
-## R8-A design boundary
-
-Sable Start is one consumer of the shared R8-A design contract in `platform_sable`.
-
-Authoritative first-R8 appearance behavior:
-
-```text
-Follow system
-Light
-Dark
-bounded accent selection
-reset/default
-shared semantic colors/typography/spacing/shapes
-```
-
-SableStart must not independently define a conflicting theme taxonomy or persistent schema.
-
-The existing R8 draft prototype with Metro/Graphite/OLED surface modes and user-selectable corner styles is not accepted first-R8 behavior until/unless the shared platform requirements are explicitly changed.
-
-## Rust / JNI boundary
-
-Rust may own deterministic launcher-local state/logic where it materially helps correctness and testability. Kotlin/Android continues to own LauncherApps/package/profile APIs, Activity lifecycle, permissions and Compose UI.
-
-Any JNI boundary must remain narrow and be tested end-to-end. A passing host Rust test is not proof that the Android native library is packaged/loaded/called correctly.
-
-## Device portability
-
-Panther, Bramble and future device targets should consume the same Sable Start source. A platform/device adapter is justified only when evidence identifies a real Android-version/device difference.
-
-A bug observed on Panther is not sufficient reason to move common launcher semantics into `device_sable_panther`.
-
-## HOME adoption
-
-Launcher feature completeness and default HOME adoption are separate gates. See `HOME_ADOPTION_GATE.md`.
-
-Testing Sable Start must not silently mutate the device default launcher merely because Sable Start is launcher-capable.
-
-## Validation layers
-
-Use layered evidence:
-
-```text
-requirements/source identity
- -> pure/model/Rust tests
- -> Kotlin/JNI/native tests as applicable
- -> app/module compile
- -> APK/package inspection
- -> product selection/install/image evidence
- -> controlled device launch/inventory/UI evidence
- -> HOME/default role validation only when separately authorized
-```
-
-No layer implies the next one automatically.
+R3/R5/R6 migration, runtime and HOME-adoption documents remain preserved as
+historical evidence. Their pending/current wording is superseded by the accepted
+SableLauncher architecture.
