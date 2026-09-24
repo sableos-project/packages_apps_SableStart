@@ -1,5 +1,8 @@
 # Sable Start R3B-R1 gate false-negative closure — 2026-09-11
 
+> **HISTORICAL R3 EVIDENCE — 2026-09-24 classification:** preserved as exact milestone evidence. It predates the final R9 standalone SableLauncher HOME architecture and must not be used as current launcher-role status.
+
+
 The R3B-R1 rerun passed the exact-source-bound Soong module build and emitted a valid `SableStart.apk`, but the gate mechanically reported `FAIL` because its post-build archive checks returned false negatives.
 
 ## Proven artifact state
