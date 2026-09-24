@@ -1,6 +1,9 @@
 # Sable Start HOME adoption gate
 
-Status: **separate product/runtime decision — not yet authorization to change the device HOME role.**
+> **HISTORICAL / SUPERSEDED — 2026-09-24:** this document records an earlier SableStart milestone. Final Panther R9 physically accepted standalone `org.sableos.launcher` as HOME, with Launcher3QuickStep Recents-only; the standalone SableStart runtime product is retired. Preserve the body as historical requirements/evidence, not current execution authority.
+
+
+Status: **HISTORICAL_EVIDENCE / SUPERSEDED CURRENT ROLE.**
 
 Sable Start can be developed and validated as a launcher-capable application without silently becoming the device's default HOME application. Earlier runtime work intentionally preserved Quickstep as HOME while Sable Start preview/activity behavior was validated.
 
