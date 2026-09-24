@@ -1,6 +1,9 @@
 # Sable Start migration status
 
-Status: **IN PROGRESS — source capture, sealed migration commit, remote branch/PR boundary, and direct migrated-checkout module build are closed; clean `platform_manifest` reconstruction and source integration remain open.**
+> **HISTORICAL / SUPERSEDED — 2026-09-24:** this document records an earlier SableStart milestone. Final Panther R9 physically accepted standalone `org.sableos.launcher` as HOME, with Launcher3QuickStep Recents-only; the standalone SableStart runtime product is retired. Preserve the body as historical requirements/evidence, not current execution authority.
+
+
+Status: **HISTORICAL_EVIDENCE / SUPERSEDED CURRENT ROLE.**
 
 The organization repository checkout is now proven to build `SableStart` directly at the canonical Android source path and to reproduce the previously validated APK hash on the same Panther substrate/toolchain. The historical Panther workspace remains an important reference until the complete source composition is reconstructible from `platform_manifest` and the source integration boundary is closed.
 
