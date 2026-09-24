@@ -1,5 +1,8 @@
 # Sable Start R3B Soong status — 2026-09-11
 
+> **HISTORICAL R3 EVIDENCE — 2026-09-24 classification:** preserved as exact milestone evidence. It predates the final R9 standalone SableLauncher HOME architecture and must not be used as current launcher-role status.
+
+
 The first exact module-scoped Soong compile/type-check gate reached the real Android build graph but did not close.
 
 Validated pre-build facts from the first gate:
