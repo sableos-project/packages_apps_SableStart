@@ -1,6 +1,9 @@
 # R6 — All Apps, shared Search inventory, and local-time greeting
 
-Status: **normative implementation requirements for the next functional Sable Start milestone after migrated-source build closure.**
+> **HISTORICAL / SUPERSEDED — 2026-09-24:** this document records an earlier SableStart milestone. Final Panther R9 physically accepted standalone `org.sableos.launcher` as HOME, with Launcher3QuickStep Recents-only; the standalone SableStart runtime product is retired. Preserve the body as historical requirements/evidence, not current execution authority.
+
+
+Status: **HISTORICAL_EVIDENCE / SUPERSEDED CURRENT ROLE.**
 
 This document is intentionally detailed. Future implementation work should use it as the source of direction instead of inventing new launcher semantics during coding.
 
