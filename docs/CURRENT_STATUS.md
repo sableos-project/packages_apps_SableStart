@@ -1,25 +1,27 @@
 # Sable Start repository current status
 
-Status date: **2026-09-24**
+Status date: **2026-10-02**
 
 ## Current role
 
 ```text
-shipping SableOS HOME package      org.sableos.launcher
-Quickstep role                     Recents/Overview/task substrate
+Sable first-party HOME runtime     packages/apps/Launcher3 / Launcher3QuickStep
+Sable Start role                   presentation/state source hosted in Launcher3
+standalone org.sableos.launcher    retired from current product architecture
 standalone org.sableos.start       retired from product
 this repository                    historical/presentation reference
-Panther                             frozen accepted R9 reference
-active launcher design             keyboard-first common SableLauncher profile
+Panther                             frozen accepted touch-first reference
+active launcher design             keyboard-first Launcher3-hosted Sable Start
+third-party HOME selection         allowed through Android user choice
 ```
 
-The prior 2026-09-20 architecture in which Launcher3/Quickstep hosted
-SableStartScreen as the NORMAL state was superseded before final Panther R9
-physical acceptance.
+The R9L8 cutover is current authority: Launcher3/Launcher3QuickStep hosts Sable
+Start and remains the first-party HOME plus Recents/Overview/task/gesture
+substrate. Historical standalone-SableLauncher acceptance notes remain evidence
+for their milestone but are not current architecture.
 
-The final accepted architecture moved HOME ownership back into a standalone
-Sable-owned `org.sableos.launcher` package while retaining Quickstep privately
-for Recents/task/gesture substrate.
+SableOS must not force Sable Start back after an explicit user-selected
+third-party HOME.
 
 ## Historical evidence
 
@@ -35,7 +37,7 @@ These files are audit/history records, not current execution authority.
 
 ## Current design handoff
 
-Future reusable presentation work should feed the public SableLauncher/common
+Future reusable presentation work should feed the Launcher3-hosted Sable Start/common
 design architecture, especially the keyboard-first profile:
 
 - visible deterministic focus;
