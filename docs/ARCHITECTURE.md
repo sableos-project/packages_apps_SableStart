@@ -1,6 +1,6 @@
 # Sable Start / launcher presentation architecture
 
-Status: **current repository-role architecture — 2026-09-24**
+Status: **current repository-role architecture — 2026-10-02**
 
 This document defines what remains reusable from SableStart history after the
 accepted R9 launcher architecture change.
@@ -8,16 +8,21 @@ accepted R9 launcher architecture change.
 ## Current product boundary
 
 ```text
-SableLauncher (org.sableos.launcher)
-    owns HOME and user-facing launcher semantics
-
 Launcher3QuickStep
+    owns the Sable first-party HOME runtime
     owns Recents/Overview/task/gesture substrate
-    is not HOME eligible
+    hosts Sable Start presentation/state source
+
+Standalone SableLauncher / org.sableos.launcher
+    retired from current product architecture
 
 SableStart repository
     presentation/history/reference source
-    not a shipping HOME package authority
+    not a standalone shipping HOME package authority
+
+Android user choice
+    third-party HOME selection allowed
+    Sable Start is not forcibly restored after explicit user selection
 ```
 
 ## Reusable semantic concepts
@@ -82,5 +87,5 @@ in common launcher semantics.
 ## Historical documents
 
 R3/R5/R6 migration, runtime and HOME-adoption documents remain preserved as
-historical evidence. Their pending/current wording is superseded by the accepted
-SableLauncher architecture.
+historical evidence. Their pending/current wording is superseded by the current
+Launcher3-hosted Sable Start architecture.

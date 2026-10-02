@@ -1,6 +1,6 @@
 # Sable Start presentation/history repository
 
-Status: **historical/common presentation reference — 2026-09-25**
+Status: **historical/common presentation reference — 2026-10-02**
 
 This repository is **not** the current private integration release authority and
 is not the place to infer the exact accepted Panther image source.
@@ -13,13 +13,28 @@ R9_PANTHER_ACCEPTED_SOURCE=edf62e5bb08372a1395841d6cc5d78d3148a7695
 R9_PANTHER_TARGET_FILES_SHA256=a0b359613c4f30e9a834fba212e0b044a97d63ed0537c59471c31b99b627d285
 R10_KEYBOARD_FIRST_DESIGN_V1=MERGED_PR_108
 PANTHER_ROLE=FROZEN_TOUCH_FIRST_REFERENCE
-TITAN2_ROLE=ACTIVE_KEYBOARD_FIRST_N0_TARGET
+TITAN2_ROLE=ACTIVE_KEYBOARD_FIRST_N1D_C3B_TARGET
 ```
 
 Historical branches and R3-R8 documents in this repository remain valuable for
 presentation semantics, migration evidence and launcher requirement history.
 They must not be read as current HOME ownership, current execution status or
 current release evidence.
+
+Current first-party HOME architecture:
+
+```text
+SABLE_FIRST_PARTY_HOME_OWNER=Launcher3QuickStep
+SABLESTART_ROLE=PRESENTATION_AND_STATE_SOURCE_HOSTED_IN_LAUNCHER3
+STANDALONE_SABLELAUNCHER_RUNTIME=RETIRED
+THIRD_PARTY_HOME_SELECTION_ALLOWED=YES
+FORCE_SABLE_HOME_AFTER_USER_SELECTION=NO
+```
+
+This repository remains presentation/history source; it is not a standalone
+shipping HOME APK. Android user selection of another installed launcher remains
+supported. A third-party launcher does not automatically inherit Sable's
+Quickstep/SystemUI/Private-Space integration.
 
 ## Active design handoff
 
