@@ -1,6 +1,6 @@
 # Sable Start presentation/history repository
 
-Status: **historical/common presentation reference — 2026-10-02**
+Status: **historical/common presentation reference; active keyboard-first handoff is P1 — 2026-10-02**
 
 This repository is **not** the current private integration release authority and
 is not the place to infer the exact accepted Panther image source.
@@ -35,6 +35,25 @@ This repository remains presentation/history source; it is not a standalone
 shipping HOME APK. Android user selection of another installed launcher remains
 supported. A third-party launcher does not automatically inherit Sable's
 Quickstep/SystemUI/Private-Space integration.
+
+## P1 current assignment
+
+The active Titan product-source task is **P1** in the private
+`aimindseye/titan2-temp` lane: prepare reusable keyboard-first
+interaction/focus/type-to-search behavior and tests for canonical
+Launcher3/Launcher3QuickStep-hosted Sable Start.
+
+```text
+P1_STANDALONE_HOME_ALLOWED=NO
+P1_CANONICAL_HOME_OWNER=Launcher3QuickStep
+P1_FIRST_CHARACTER_PRESERVATION=REQUIRED
+P1_DETERMINISTIC_FOCUS=REQUIRED
+P1_DEVICE_MODEL_BRANCHING=FORBIDDEN
+P1_CANONICAL_RUNTIME_INTEGRATION=PENDING
+```
+
+P1 is source/handoff work only. Canonical Launcher3 Android-tree integration
+and device qualification remain owned by `aimindseye/sableos`.
 
 ## Active design handoff
 
