@@ -33,12 +33,12 @@ jobs:
           fi
       - name: Run MobSFScan
         if: steps.source.outputs.present == 'true'
-        uses: MobSF/mobsfscan@ec2927a8cfab6626a67f26b223be3aba52a34b70 # pinned baseline
+        uses: MobSF/mobsfscan@4645ea70bc093268502fe9f6df93e41bb482254a # pinned baseline
         with:
           args: ". --sarif --output mobsfscan-results.sarif --type android"
       - name: Upload SARIF
         if: always() && hashFiles('mobsfscan-results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
         with:
           sarif_file: mobsfscan-results.sarif
           category: sable-mobsfscan-android
